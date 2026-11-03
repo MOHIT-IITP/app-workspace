@@ -26,6 +26,7 @@ An Omarchy status bar plugin that displays workspace indicators and persistent m
 ~/.config/omarchy/plugins/app-workspaces/
 ├── manifest.json       # Plugin manifest and bar widget metadata
 ├── BarWidget.qml       # Main bar widget implementation
+├── LICENSE             # MIT License
 ├── assets/
 │   └── preview.png     # Widget preview screenshot
 └── README.md           # Plugin documentation
@@ -43,3 +44,7 @@ omarchy plugin enable mohiitp.app-workspaces --section left
 # Revert to default workspaces widget if ever needed
 omarchy plugin enable omarchy.workspaces --section left
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
