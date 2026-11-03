@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.mohiitp.app-workspaces",
+  "name": "App Workspaces",
+  "version": "1.0.0",
+  "author": "Mohit (mohiitp)",
+  "license": "MIT",
+  "description": "Workspaces bar widget showing active workspace expanded with current application logo on the left.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "App Workspaces",
+    "description": "Displays workspace indicators with current app logo on the active workspace.",
+    "category": "Compositor",
+    "defaultSection": "left",
+    "allowMultiple": false
+  }
+}
