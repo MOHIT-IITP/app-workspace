@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "io.github.mohiitp.app-workspaces",
+  "id": "mohiitp.app-workspaces",
   "name": "App Workspaces",
   "version": "1.0.0",
   "author": "Mohit (mohiitp)",
   "license": "MIT",
-  "description": "Workspaces bar widget showing active workspace expanded with current application logo on the left.",
+  "description": "Workspaces bar widget showing persistent monochrome app icons for all open applications, framed with a sliding HUD corner-bracket reticle.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,7 +14,7 @@
   },
   "barWidget": {
     "displayName": "App Workspaces",
-    "description": "Displays workspace indicators with current app logo on the active workspace.",
+    "description": "Displays workspace indicators with persistent monochrome app icons and a sliding HUD corner-bracket reticle.",
     "category": "Compositor",
     "defaultSection": "left",
     "allowMultiple": false

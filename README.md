@@ -35,10 +35,10 @@ An Omarchy status bar plugin that displays workspace indicators and persistent m
 
 ```bash
 # Disable plugin
-omarchy plugin disable io.github.mohiitp.app-workspaces
+omarchy plugin disable mohiitp.app-workspaces
 
 # Re-enable on the left bar section
-omarchy plugin enable io.github.mohiitp.app-workspaces --section left
+omarchy plugin enable mohiitp.app-workspaces --section left
 
 # Revert to default workspaces widget if ever needed
 omarchy plugin enable omarchy.workspaces --section left

@@ -9,7 +9,7 @@ import qs.Ui
 
 BarWidget {
   id: root
-  moduleName: "io.github.mohiitp.app-workspaces"
+  moduleName: "mohiitp.app-workspaces"
 
   property var buttonsMap: ({})
 
