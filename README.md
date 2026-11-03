@@ -2,6 +2,8 @@
 
 An Omarchy status bar plugin that displays workspace indicators and persistent monochrome application icons, with a fluid sliding HUD corner-bracket reticle that animates when switching workspaces.
 
+![App Workspaces Preview](assets/preview.png)
+
 ## Features
 
 - **Fluid Sliding Focus Reticle**: When switching workspaces, the corner-bracket frame (`┌ ┐ └ ┘`) and background pill smoothly glide across the bar to the newly active workspace with an `OutCubic` motion curve.
@@ -22,9 +24,11 @@ An Omarchy status bar plugin that displays workspace indicators and persistent m
 
 ```
 ~/.config/omarchy/plugins/app-workspaces/
-├── manifest.json   # Plugin manifest and bar widget metadata
-├── BarWidget.qml   # Main bar widget implementation
-└── README.md       # Plugin documentation
+├── manifest.json       # Plugin manifest and bar widget metadata
+├── BarWidget.qml       # Main bar widget implementation
+├── assets/
+│   └── preview.png     # Widget preview screenshot
+└── README.md           # Plugin documentation
 ```
 
 ## Management
