@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Hyprland
 import qs.Commons
@@ -37,9 +38,11 @@ BarWidget {
   }
 
   function workspaceIds() {
-    var ids = [1, 2, 3, 4, 5]
-    var values = Hyprland.workspaces.values
+    var baseSlots = root.setting("slots", 4)
+    var ids = []
+    for (var s = 1; s <= baseSlots; s++) ids.push(s)
 
+    var values = Hyprland.workspaces.values
     for (var i = 0; i < values.length; i++) {
       var id = values[i].id
       if (id > 0 && id <= 10 && ids.indexOf(id) === -1) ids.push(id)
@@ -191,11 +194,144 @@ BarWidget {
   readonly property var activeToplevel: Hyprland.activeToplevel
   readonly property string activeAddress: activeToplevel ? String(activeToplevel.address || "") : ""
   readonly property real trailingGap: root.vertical ? 0 : Style.spaceReal(1.5)
+  readonly property real framePaddingX: Style.space(8)
+  readonly property real framePaddingY: Style.space(4.5)
 
-  implicitWidth: root.vertical ? root.barSize : (grid.implicitWidth + trailingGap)
-  implicitHeight: root.vertical ? grid.implicitHeight : root.barSize
+  implicitWidth: root.vertical
+    ? root.barSize
+    : (grid.implicitWidth + (framePaddingX * 2) + trailingGap)
 
-  // Sliding active indicator with corner brackets
+  implicitHeight: root.vertical
+    ? (grid.implicitHeight + (framePaddingX * 2))
+    : root.barSize
+
+  // Outer widget frame with corner brackets enclosing all workspaces: ┌ ┐ └ ┘
+  Item {
+    id: outerFrame
+    z: 0
+    anchors.fill: parent
+    anchors.margins: Style.space(0.5)
+    anchors.rightMargin: root.vertical ? Style.space(0.5) : (Style.space(0.5) + root.trailingGap)
+
+    readonly property color bracketColor: root.bar ? root.bar.barForeground : "#ffffff"
+    readonly property real strokeWidth: Math.max(1.5, Style.space(1.5))
+    readonly property real bracketLength: Style.space(6.5)
+    readonly property real bracketOpacity: 0.95
+
+    // Top-Left corner ┌
+    Rectangle {
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: outerFrame.bracketLength
+      height: outerFrame.strokeWidth
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+    Rectangle {
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: outerFrame.strokeWidth
+      height: outerFrame.bracketLength
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+
+    // Top-Right corner ┐
+    Rectangle {
+      anchors.top: parent.top
+      anchors.right: parent.right
+      width: outerFrame.bracketLength
+      height: outerFrame.strokeWidth
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+    Rectangle {
+      anchors.top: parent.top
+      anchors.right: parent.right
+      width: outerFrame.strokeWidth
+      height: outerFrame.bracketLength
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+
+    // Bottom-Left corner └
+    Rectangle {
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: outerFrame.bracketLength
+      height: outerFrame.strokeWidth
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+    Rectangle {
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: outerFrame.strokeWidth
+      height: outerFrame.bracketLength
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+
+    // Bottom-Right corner ┘
+    Rectangle {
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      width: outerFrame.bracketLength
+      height: outerFrame.strokeWidth
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+    Rectangle {
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      width: outerFrame.strokeWidth
+      height: outerFrame.bracketLength
+      color: outerFrame.bracketColor
+      opacity: outerFrame.bracketOpacity
+
+      Behavior on color {
+        enabled: !root.bar || root.bar.foregroundAnimationEnabled
+        ColorAnimation { duration: Style.duration(160) }
+      }
+    }
+  }
+
+  // Sliding active indicator with brackets at the exact edge of the dark background
   Item {
     id: slidingReticle
     z: 0
@@ -229,88 +365,191 @@ BarWidget {
 
     Component.onCompleted: Qt.callLater(function() { slidingReticle.ready = true })
 
-    // Active workspace pill background
+    // Active workspace pill background (corner roundness: 0)
     Rectangle {
       id: activeBgPill
       anchors.fill: parent
-      anchors.margins: Style.space(2)
-      radius: Style.space(2)
+      radius: 0
       color: root.bar ? root.bar.background : Commons.Color.background
-      opacity: 0.65
+      opacity: root.bar && root.bar.glassy ? 0.45 : (root.bar && root.bar.transparent ? 0.35 : 0.65)
     }
 
-    // Active workspace corner brackets: ┌ ┐ └ ┘
+    // Active workspace brackets at the exact edges of the dark background (corner roundness: 0):
+    // In horizontal mode: Left bracket [ on the left edge, Right bracket ] on the right edge
     Item {
-      id: cornerFrame
+      id: horizontalBrackets
+      visible: !root.vertical && slidingReticle.width > 0 && slidingReticle.height > 0
       anchors.fill: parent
-      anchors.margins: Style.space(2)
 
-      readonly property color bracketColor: root.bar ? root.bar.barForeground : "#ffffff"
-      readonly property real strokeWidth: Math.max(1.5, Style.space(1.5))
-      readonly property real bracketLength: Style.space(5)
+      readonly property color strokeCol: root.bar ? root.bar.barForeground : "#ffffff"
+      readonly property real strokeW: Math.max(1.5, Style.space(1.5))
+      readonly property real arm: Style.space(5)
+      readonly property real bracketOpacity: 0.95
+
+      // Left bracket [
+      Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        width: horizontalBrackets.arm
+        height: horizontalBrackets.strokeW
+        color: horizontalBrackets.strokeCol
+        opacity: horizontalBrackets.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
+      }
+      Rectangle {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        width: horizontalBrackets.strokeW
+        color: horizontalBrackets.strokeCol
+        opacity: horizontalBrackets.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
+      }
+      Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        width: horizontalBrackets.arm
+        height: horizontalBrackets.strokeW
+        color: horizontalBrackets.strokeCol
+        opacity: horizontalBrackets.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
+      }
+
+      // Right bracket ]
+      Rectangle {
+        anchors.top: parent.top
+        anchors.right: parent.right
+        width: horizontalBrackets.arm
+        height: horizontalBrackets.strokeW
+        color: horizontalBrackets.strokeCol
+        opacity: horizontalBrackets.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
+      }
+      Rectangle {
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        width: horizontalBrackets.strokeW
+        color: horizontalBrackets.strokeCol
+        opacity: horizontalBrackets.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
+      }
+      Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        width: horizontalBrackets.arm
+        height: horizontalBrackets.strokeW
+        color: horizontalBrackets.strokeCol
+        opacity: horizontalBrackets.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
+      }
+    }
+
+    // In vertical mode: corner brackets at the 4 corners of the dark pill
+    Item {
+      id: verticalCorners
+      visible: root.vertical
+      anchors.fill: parent
+
+      readonly property color strokeCol: root.bar ? root.bar.barForeground : "#ffffff"
+      readonly property real strokeW: Math.max(1.5, Style.space(1.5))
+      readonly property real cornerArm: Style.space(5)
+      readonly property real bracketOpacity: 0.95
 
       // Top-Left corner ┌
       Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
-        width: cornerFrame.bracketLength
-        height: cornerFrame.strokeWidth
-        color: cornerFrame.bracketColor
+        width: verticalCorners.cornerArm
+        height: verticalCorners.strokeW
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
       Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
-        width: cornerFrame.strokeWidth
-        height: cornerFrame.bracketLength
-        color: cornerFrame.bracketColor
+        width: verticalCorners.strokeW
+        height: verticalCorners.cornerArm
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
 
       // Top-Right corner ┐
       Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
-        width: cornerFrame.bracketLength
-        height: cornerFrame.strokeWidth
-        color: cornerFrame.bracketColor
+        width: verticalCorners.cornerArm
+        height: verticalCorners.strokeW
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
       Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
-        width: cornerFrame.strokeWidth
-        height: cornerFrame.bracketLength
-        color: cornerFrame.bracketColor
+        width: verticalCorners.strokeW
+        height: verticalCorners.cornerArm
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
 
       // Bottom-Left corner └
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        width: cornerFrame.bracketLength
-        height: cornerFrame.strokeWidth
-        color: cornerFrame.bracketColor
+        width: verticalCorners.cornerArm
+        height: verticalCorners.strokeW
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        width: cornerFrame.strokeWidth
-        height: cornerFrame.bracketLength
-        color: cornerFrame.bracketColor
+        width: verticalCorners.strokeW
+        height: verticalCorners.cornerArm
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
 
       // Bottom-Right corner ┘
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: cornerFrame.bracketLength
-        height: cornerFrame.strokeWidth
-        color: cornerFrame.bracketColor
+        width: verticalCorners.cornerArm
+        height: verticalCorners.strokeW
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: cornerFrame.strokeWidth
-        height: cornerFrame.bracketLength
-        color: cornerFrame.bracketColor
+        width: verticalCorners.strokeW
+        height: verticalCorners.cornerArm
+        color: verticalCorners.strokeCol
+        opacity: verticalCorners.bracketOpacity
       }
     }
   }
@@ -319,10 +558,13 @@ BarWidget {
     id: grid
     z: 1
     anchors.fill: parent
-    anchors.rightMargin: root.trailingGap
+    anchors.leftMargin: root.vertical ? root.framePaddingY : root.framePaddingX
+    anchors.rightMargin: root.vertical ? root.framePaddingY : (root.framePaddingX + root.trailingGap)
+    anchors.topMargin: root.vertical ? root.framePaddingX : root.framePaddingY
+    anchors.bottomMargin: root.vertical ? root.framePaddingX : root.framePaddingY
     columns: root.vertical ? 1 : root.workspaceIds().length
-    columnSpacing: root.vertical ? 0 : Style.space(3)
-    rowSpacing: root.vertical ? Style.space(3) : 0
+    columnSpacing: root.vertical ? 0 : Style.space(12)
+    rowSpacing: root.vertical ? Style.space(8) : 0
 
     Repeater {
       model: root.workspaceIds()
@@ -345,12 +587,12 @@ BarWidget {
         tooltipText: "Workspace " + modelData + (hasApps ? " (" + appList.length + " app" + (appList.length > 1 ? "s" : "") + ")" : "")
 
         fixedWidth: root.vertical
-          ? root.barSize
-          : (hasApps ? contentRow.implicitWidth + Style.space(20) : (focused ? Style.space(26) : Style.space(20)))
+          ? (root.barSize - (root.framePaddingY * 2))
+          : (hasApps ? contentRow.implicitWidth + Style.space(16) : (focused ? Style.space(20) : Style.space(16)))
 
         fixedHeight: root.vertical
-          ? (hasApps ? Math.max(root.barSize, contentCol.implicitHeight + Style.space(16)) : root.barSize)
-          : root.barSize
+          ? (hasApps ? Math.max(root.barSize - (root.framePaddingY * 2), contentCol.implicitHeight + Style.space(18)) : (root.barSize - (root.framePaddingY * 2)))
+          : (root.barSize - (root.framePaddingY * 2))
 
         Layout.preferredWidth: fixedWidth
         Layout.preferredHeight: fixedHeight
@@ -372,12 +614,11 @@ BarWidget {
         Component.onCompleted: root.registerButton(modelData, wsBtn)
         Component.onDestruction: if (root) root.unregisterButton(modelData)
 
-        // Background for inactive occupied workspaces
+        // Background for inactive occupied workspaces (corner roundness: 0)
         Rectangle {
           id: inactiveBgPill
           anchors.fill: parent
-          anchors.margins: Style.space(2)
-          radius: Style.space(2)
+          radius: 0
           color: root.bar ? root.bar.background : Commons.Color.background
           opacity: !wsBtn.focused && wsBtn.hasApps ? 0.25 : 0
           visible: opacity > 0
@@ -393,10 +634,10 @@ BarWidget {
           Item {
             id: iconSlot
             required property var modelData
-            width: Style.space(16)
-            height: Style.space(16)
-            implicitWidth: Style.space(16)
-            implicitHeight: Style.space(16)
+            width: Style.space(12)
+            height: Style.space(12)
+            implicitWidth: Style.space(12)
+            implicitHeight: Style.space(12)
             anchors.horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
             anchors.verticalCenter: !root.vertical ? parent.verticalCenter : undefined
 
