@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
-import QtQuick.Shapes
 import Quickshell
 import Quickshell.Hyprland
 import qs.Commons
@@ -21,7 +20,8 @@ BarWidget {
     buttonsMap = next
   }
 
-  function unregisterButton(id) {
+  function unregisterButton(id, btn) {
+    if (btn && buttonsMap[id] !== btn) return
     var next = {}
     for (var k in buttonsMap) {
       if (Number(k) !== Number(id)) next[k] = buttonsMap[k]
@@ -151,7 +151,18 @@ BarWidget {
     return ""
   }
 
-  function workspaceAppList(ws, currentActiveAddress) {
+  function titleForAddress(ws, address) {
+    if (!ws || !ws.toplevels || !ws.toplevels.values) return ""
+    var tls = ws.toplevels.values
+    for (var i = 0; i < tls.length; i++) {
+      if (tls[i] && String(tls[i].address) === String(address)) {
+        return String(tls[i].title || "")
+      }
+    }
+    return ""
+  }
+
+  function workspaceAppList(ws) {
     if (!ws || !ws.toplevels || !ws.toplevels.values) return []
     var tls = ws.toplevels.values
     var list = []
@@ -167,20 +178,15 @@ BarWidget {
       var iconPath = resolveIcon(tl)
       if (!iconPath) continue
 
-      var isAct = false
-      if (currentActiveAddress && tl.address) {
-        isAct = (currentActiveAddress === tl.address)
-      } else {
-        isAct = tl.activated === true
-      }
-
       list.push({
         address: addr,
-        title: String(tl.title || ""),
-        icon: iconPath,
-        activated: isAct
+        icon: iconPath
       })
     }
+
+    list.sort(function(left, right) {
+      return left.address < right.address ? -1 : (left.address > right.address ? 1 : 0)
+    })
 
     return list
   }
@@ -193,145 +199,19 @@ BarWidget {
   readonly property int activeWsId: monitor && monitor.activeWorkspace ? monitor.activeWorkspace.id : (Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1)
   readonly property var activeToplevel: Hyprland.activeToplevel
   readonly property string activeAddress: activeToplevel ? String(activeToplevel.address || "") : ""
-  readonly property real trailingGap: root.vertical ? 0 : Style.spaceReal(1.5)
-  readonly property real framePaddingX: Style.space(8)
-  readonly property real framePaddingY: Style.space(4.5)
+  readonly property real trailingGap: 0
+  readonly property real framePaddingX: Style.space(3)
+  readonly property real framePaddingY: Style.space(2)
 
   implicitWidth: root.vertical
-    ? root.barSize
-    : (grid.implicitWidth + (framePaddingX * 2) + trailingGap)
+    ? (root.barSize - Style.space(4))
+    : (horizontalRow.implicitWidth + (framePaddingX * 2))
 
   implicitHeight: root.vertical
-    ? (grid.implicitHeight + (framePaddingX * 2))
-    : root.barSize
+    ? (verticalCol.implicitHeight + (framePaddingX * 2))
+    : (root.barSize - Style.space(4))
 
-  // Outer widget frame with corner brackets enclosing all workspaces: ┌ ┐ └ ┘
-  Item {
-    id: outerFrame
-    z: 0
-    anchors.fill: parent
-    anchors.margins: Style.space(0.5)
-    anchors.rightMargin: root.vertical ? Style.space(0.5) : (Style.space(0.5) + root.trailingGap)
-
-    readonly property color bracketColor: root.bar ? root.bar.barForeground : "#ffffff"
-    readonly property real strokeWidth: Math.max(1.5, Style.space(1.5))
-    readonly property real bracketLength: Style.space(6.5)
-    readonly property real bracketOpacity: 0.95
-
-    // Top-Left corner ┌
-    Rectangle {
-      anchors.top: parent.top
-      anchors.left: parent.left
-      width: outerFrame.bracketLength
-      height: outerFrame.strokeWidth
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-    Rectangle {
-      anchors.top: parent.top
-      anchors.left: parent.left
-      width: outerFrame.strokeWidth
-      height: outerFrame.bracketLength
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-
-    // Top-Right corner ┐
-    Rectangle {
-      anchors.top: parent.top
-      anchors.right: parent.right
-      width: outerFrame.bracketLength
-      height: outerFrame.strokeWidth
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-    Rectangle {
-      anchors.top: parent.top
-      anchors.right: parent.right
-      width: outerFrame.strokeWidth
-      height: outerFrame.bracketLength
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-
-    // Bottom-Left corner └
-    Rectangle {
-      anchors.bottom: parent.bottom
-      anchors.left: parent.left
-      width: outerFrame.bracketLength
-      height: outerFrame.strokeWidth
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-    Rectangle {
-      anchors.bottom: parent.bottom
-      anchors.left: parent.left
-      width: outerFrame.strokeWidth
-      height: outerFrame.bracketLength
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-
-    // Bottom-Right corner ┘
-    Rectangle {
-      anchors.bottom: parent.bottom
-      anchors.right: parent.right
-      width: outerFrame.bracketLength
-      height: outerFrame.strokeWidth
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-    Rectangle {
-      anchors.bottom: parent.bottom
-      anchors.right: parent.right
-      width: outerFrame.strokeWidth
-      height: outerFrame.bracketLength
-      color: outerFrame.bracketColor
-      opacity: outerFrame.bracketOpacity
-
-      Behavior on color {
-        enabled: !root.bar || root.bar.foregroundAnimationEnabled
-        ColorAnimation { duration: Style.duration(160) }
-      }
-    }
-  }
-
-  // Sliding active indicator with brackets at the exact edge of the dark background
+  // Sliding active reticle with edge-aligned brackets and smooth interpolation
   Item {
     id: slidingReticle
     z: 0
@@ -341,470 +221,481 @@ BarWidget {
     readonly property var targetBtn: root.buttonsMap[root.activeWsId]
 
     visible: targetBtn !== undefined && targetBtn !== null && width > 0 && height > 0
-    x: targetBtn ? grid.x + targetBtn.x : 0
-    y: targetBtn ? grid.y + targetBtn.y : 0
+    x: targetBtn ? (root.vertical ? (root.width - targetBtn.width) / 2 : targetBtn.x + root.framePaddingX) : 0
+    y: targetBtn ? (root.vertical ? targetBtn.y + root.framePaddingX : (root.height - targetBtn.height) / 2) : 0
     width: targetBtn ? (targetBtn.width > 0 ? targetBtn.width : targetBtn.fixedWidth) : 0
     height: targetBtn ? (targetBtn.height > 0 ? targetBtn.height : targetBtn.fixedHeight) : 0
 
     Behavior on x {
       enabled: slidingReticle.ready
-      NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic }
+      NumberAnimation { duration: Style.duration(240); easing.type: Easing.OutCubic }
     }
     Behavior on y {
       enabled: slidingReticle.ready
-      NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic }
+      NumberAnimation { duration: Style.duration(240); easing.type: Easing.OutCubic }
     }
     Behavior on width {
       enabled: slidingReticle.ready
-      NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic }
+      NumberAnimation { duration: Style.duration(240); easing.type: Easing.OutCubic }
     }
     Behavior on height {
       enabled: slidingReticle.ready
-      NumberAnimation { duration: Style.duration(220); easing.type: Easing.OutCubic }
+      NumberAnimation { duration: Style.duration(240); easing.type: Easing.OutCubic }
     }
 
     Component.onCompleted: Qt.callLater(function() { slidingReticle.ready = true })
 
-    // Active workspace pill background (corner roundness: 0)
+    // Active workspace pill background (corner roundness: 0, subtle soft tint)
     Rectangle {
       id: activeBgPill
       anchors.fill: parent
       radius: 0
       color: root.bar ? root.bar.background : Commons.Color.background
-      opacity: root.bar && root.bar.glassy ? 0.45 : (root.bar && root.bar.transparent ? 0.35 : 0.65)
+      opacity: 0.18
+
+      Behavior on opacity {
+        NumberAnimation { duration: Style.duration(180) }
+      }
     }
 
-    // Active workspace brackets at the exact edges of the dark background (corner roundness: 0):
-    // In horizontal mode: Left bracket [ on the left edge, Right bracket ] on the right edge
+    // Corner brackets at the 4 corners of the active workspace pill: ┌ ┐ └ ┘
     Item {
-      id: horizontalBrackets
-      visible: !root.vertical && slidingReticle.width > 0 && slidingReticle.height > 0
+      id: reticleCorners
+      visible: slidingReticle.width > 0 && slidingReticle.height > 0
       anchors.fill: parent
 
       readonly property color strokeCol: root.bar ? root.bar.barForeground : "#ffffff"
       readonly property real strokeW: Math.max(1.5, Style.space(1.5))
-      readonly property real arm: Style.space(5)
-      readonly property real bracketOpacity: 0.95
-
-      // Left bracket [
-      Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        width: horizontalBrackets.arm
-        height: horizontalBrackets.strokeW
-        color: horizontalBrackets.strokeCol
-        opacity: horizontalBrackets.bracketOpacity
-
-        Behavior on color {
-          enabled: !root.bar || root.bar.foregroundAnimationEnabled
-          ColorAnimation { duration: Style.duration(160) }
-        }
-      }
-      Rectangle {
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        width: horizontalBrackets.strokeW
-        color: horizontalBrackets.strokeCol
-        opacity: horizontalBrackets.bracketOpacity
-
-        Behavior on color {
-          enabled: !root.bar || root.bar.foregroundAnimationEnabled
-          ColorAnimation { duration: Style.duration(160) }
-        }
-      }
-      Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        width: horizontalBrackets.arm
-        height: horizontalBrackets.strokeW
-        color: horizontalBrackets.strokeCol
-        opacity: horizontalBrackets.bracketOpacity
-
-        Behavior on color {
-          enabled: !root.bar || root.bar.foregroundAnimationEnabled
-          ColorAnimation { duration: Style.duration(160) }
-        }
-      }
-
-      // Right bracket ]
-      Rectangle {
-        anchors.top: parent.top
-        anchors.right: parent.right
-        width: horizontalBrackets.arm
-        height: horizontalBrackets.strokeW
-        color: horizontalBrackets.strokeCol
-        opacity: horizontalBrackets.bracketOpacity
-
-        Behavior on color {
-          enabled: !root.bar || root.bar.foregroundAnimationEnabled
-          ColorAnimation { duration: Style.duration(160) }
-        }
-      }
-      Rectangle {
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        width: horizontalBrackets.strokeW
-        color: horizontalBrackets.strokeCol
-        opacity: horizontalBrackets.bracketOpacity
-
-        Behavior on color {
-          enabled: !root.bar || root.bar.foregroundAnimationEnabled
-          ColorAnimation { duration: Style.duration(160) }
-        }
-      }
-      Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        width: horizontalBrackets.arm
-        height: horizontalBrackets.strokeW
-        color: horizontalBrackets.strokeCol
-        opacity: horizontalBrackets.bracketOpacity
-
-        Behavior on color {
-          enabled: !root.bar || root.bar.foregroundAnimationEnabled
-          ColorAnimation { duration: Style.duration(160) }
-        }
-      }
-    }
-
-    // In vertical mode: corner brackets at the 4 corners of the dark pill
-    Item {
-      id: verticalCorners
-      visible: root.vertical
-      anchors.fill: parent
-
-      readonly property color strokeCol: root.bar ? root.bar.barForeground : "#ffffff"
-      readonly property real strokeW: Math.max(1.5, Style.space(1.5))
-      readonly property real cornerArm: Style.space(5)
+      readonly property real cornerArm: Style.space(4)
       readonly property real bracketOpacity: 0.95
 
       // Top-Left corner ┌
       Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
-        width: verticalCorners.cornerArm
-        height: verticalCorners.strokeW
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.cornerArm
+        height: reticleCorners.strokeW
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
       Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
-        width: verticalCorners.strokeW
-        height: verticalCorners.cornerArm
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.strokeW
+        height: reticleCorners.cornerArm
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
 
       // Top-Right corner ┐
       Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
-        width: verticalCorners.cornerArm
-        height: verticalCorners.strokeW
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.cornerArm
+        height: reticleCorners.strokeW
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
       Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
-        width: verticalCorners.strokeW
-        height: verticalCorners.cornerArm
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.strokeW
+        height: reticleCorners.cornerArm
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
 
       // Bottom-Left corner └
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        width: verticalCorners.cornerArm
-        height: verticalCorners.strokeW
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.cornerArm
+        height: reticleCorners.strokeW
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        width: verticalCorners.strokeW
-        height: verticalCorners.cornerArm
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.strokeW
+        height: reticleCorners.cornerArm
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
 
       // Bottom-Right corner ┘
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: verticalCorners.cornerArm
-        height: verticalCorners.strokeW
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.cornerArm
+        height: reticleCorners.strokeW
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
       Rectangle {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: verticalCorners.strokeW
-        height: verticalCorners.cornerArm
-        color: verticalCorners.strokeCol
-        opacity: verticalCorners.bracketOpacity
+        width: reticleCorners.strokeW
+        height: reticleCorners.cornerArm
+        color: reticleCorners.strokeCol
+        opacity: reticleCorners.bracketOpacity
+
+        Behavior on color {
+          enabled: !root.bar || root.bar.foregroundAnimationEnabled
+          ColorAnimation { duration: Style.duration(160) }
+        }
       }
     }
   }
 
-  GridLayout {
-    id: grid
-    z: 1
-    anchors.fill: parent
-    anchors.leftMargin: root.vertical ? root.framePaddingY : root.framePaddingX
-    anchors.rightMargin: root.vertical ? root.framePaddingY : (root.framePaddingX + root.trailingGap)
-    anchors.topMargin: root.vertical ? root.framePaddingX : root.framePaddingY
-    anchors.bottomMargin: root.vertical ? root.framePaddingX : root.framePaddingY
-    columns: root.vertical ? 1 : root.workspaceIds().length
-    columnSpacing: root.vertical ? 0 : Style.space(12)
-    rowSpacing: root.vertical ? Style.space(8) : 0
+  // Component for Workspace Buttons
+  Component {
+    id: wsBtnComponent
 
-    Repeater {
-      model: root.workspaceIds()
+    WidgetButton {
+      id: wsBtn
+      required property int modelData
 
-      WidgetButton {
-        id: wsBtn
-        required property int modelData
+      readonly property var workspace: root.workspaceById(modelData)
+      readonly property bool occupied: workspace !== null && workspace.toplevels.values.length > 0
+      readonly property bool focused: root.activeWsId === modelData
+      readonly property var rawAppList: root.workspaceAppList(workspace)
+      property var appList: []
 
-        readonly property var workspace: root.workspaceById(modelData)
-        readonly property bool occupied: workspace !== null && workspace.toplevels.values.length > 0
-        readonly property bool focused: root.activeWsId === modelData
-        readonly property var appList: root.workspaceAppList(workspace, root.activeAddress)
-        readonly property bool hasApps: appList.length > 0
-
-        bar: root.bar
-        text: modelData === 10 ? "0" : String(modelData)
-        keepSpace: true
-        labelVisible: false
-        opacity: 1.0
-        tooltipText: "Workspace " + modelData + (hasApps ? " (" + appList.length + " app" + (appList.length > 1 ? "s" : "") + ")" : "")
-
-        fixedWidth: root.vertical
-          ? (root.barSize - (root.framePaddingY * 2))
-          : (hasApps ? contentRow.implicitWidth + Style.space(16) : (focused ? Style.space(20) : Style.space(16)))
-
-        fixedHeight: root.vertical
-          ? (hasApps ? Math.max(root.barSize - (root.framePaddingY * 2), contentCol.implicitHeight + Style.space(18)) : (root.barSize - (root.framePaddingY * 2)))
-          : (root.barSize - (root.framePaddingY * 2))
-
-        Layout.preferredWidth: fixedWidth
-        Layout.preferredHeight: fixedHeight
-        Layout.minimumWidth: fixedWidth
-        Layout.maximumWidth: fixedWidth
-        Layout.minimumHeight: fixedHeight
-        Layout.maximumHeight: fixedHeight
-
-        Behavior on fixedWidth {
-          enabled: slidingReticle.ready
-          NumberAnimation { duration: Style.duration(200); easing.type: Easing.OutCubic }
+      onRawAppListChanged: {
+        var current = appList
+        if (!current || current.length !== rawAppList.length) {
+          appList = rawAppList
+          return
         }
-        Behavior on fixedHeight {
-          enabled: slidingReticle.ready
-          NumberAnimation { duration: Style.duration(200); easing.type: Easing.OutCubic }
+        for (var i = 0; i < rawAppList.length; i++) {
+          if (current[i].address !== rawAppList[i].address || current[i].icon !== rawAppList[i].icon) {
+            appList = rawAppList
+            return
+          }
         }
+      }
 
-        // Register button for sliding reticle tracking
-        Component.onCompleted: root.registerButton(modelData, wsBtn)
-        Component.onDestruction: if (root) root.unregisterButton(modelData)
+      readonly property bool hasApps: appList.length > 0
 
-        // Background for inactive occupied workspaces (corner roundness: 0)
-        Rectangle {
-          id: inactiveBgPill
-          anchors.fill: parent
-          radius: 0
-          color: root.bar ? root.bar.background : Commons.Color.background
-          opacity: !wsBtn.focused && wsBtn.hasApps ? 0.25 : 0
-          visible: opacity > 0
+      bar: root.bar
+      text: modelData === 10 ? "0" : String(modelData)
+      keepSpace: true
+      labelVisible: false
+      opacity: 1.0
+      tooltipText: "Workspace " + modelData + (hasApps ? " (" + appList.length + " app" + (appList.length > 1 ? "s" : "") + ")" : "")
+
+      // Constant width for empty workspaces keeps layout rock-solid on workspace switch!
+      fixedWidth: root.vertical
+        ? (root.barSize - (root.framePaddingY * 2) - Style.space(6))
+        : (hasApps ? contentRow.implicitWidth + Style.space(18) : Style.space(18))
+
+      fixedHeight: root.vertical
+        ? (hasApps ? Math.max(root.barSize - (root.framePaddingY * 2) - Style.space(6), contentCol.implicitHeight + Style.space(18)) : Style.space(18))
+        : (root.barSize - (root.framePaddingY * 2) - Style.space(6))
+
+      width: fixedWidth
+      height: fixedHeight
+
+      Behavior on width {
+        enabled: slidingReticle.ready
+        NumberAnimation { duration: Style.duration(240); easing.type: Easing.OutCubic }
+      }
+      Behavior on height {
+        enabled: slidingReticle.ready
+        NumberAnimation { duration: Style.duration(240); easing.type: Easing.OutCubic }
+      }
+
+      // Register button for sliding reticle tracking
+      Component.onCompleted: {
+        appList = rawAppList
+        root.registerButton(modelData, wsBtn)
+      }
+      Component.onDestruction: if (root) root.unregisterButton(modelData, wsBtn)
+
+      // Background for occupied workspaces (subtle soft tint, less dim)
+      Rectangle {
+        id: inactiveBgPill
+        anchors.fill: parent
+        radius: 0
+        color: root.bar ? root.bar.background : Commons.Color.background
+        opacity: !wsBtn.focused && wsBtn.hasApps ? 0.08 : 0
+        visible: opacity > 0
+
+        Behavior on opacity {
+          NumberAnimation { duration: Style.duration(180) }
+        }
+      }
+
+      Component {
+        id: appIconDelegate
+
+        Item {
+          id: iconSlot
+          required property var modelData
+          width: Style.space(12)
+          height: Style.space(12)
+          implicitWidth: Style.space(12)
+          implicitHeight: Style.space(12)
+          anchors.horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
+          anchors.verticalCenter: !root.vertical ? parent.verticalCenter : undefined
+
+          readonly property bool isCurrent: root.activeAddress === modelData.address
+
+          // Smooth enter animation for newly added apps
+          opacity: 0
+          scale: 0.4
+
+          Component.onCompleted: {
+            opacity = 1.0
+            scale = 1.0
+          }
 
           Behavior on opacity {
-            NumberAnimation { duration: Style.duration(140) }
+            NumberAnimation { duration: Style.duration(220) }
           }
-        }
-
-        Component {
-          id: appIconDelegate
-
-          Item {
-            id: iconSlot
-            required property var modelData
-            width: Style.space(12)
-            height: Style.space(12)
-            implicitWidth: Style.space(12)
-            implicitHeight: Style.space(12)
-            anchors.horizontalCenter: root.vertical ? parent.horizontalCenter : undefined
-            anchors.verticalCenter: !root.vertical ? parent.verticalCenter : undefined
-
-            readonly property bool isCurrent: modelData.activated
-
-            Image {
-              id: rawIcon
-              anchors.fill: parent
-              source: modelData.icon
-              sourceSize.width: Math.round(width * Screen.devicePixelRatio)
-              sourceSize.height: Math.round(height * Screen.devicePixelRatio)
-              fillMode: Image.PreserveAspectFit
-              asynchronous: true
-              smooth: true
-              visible: false
-              layer.enabled: true
-            }
-
-            MultiEffect {
-              anchors.fill: rawIcon
-              source: rawIcon
-              visible: rawIcon.status === Image.Ready
-              colorization: 1.0
-              colorizationColor: root.bar ? root.bar.barForeground : "#ffffff"
-              opacity: iconSlot.isCurrent ? 1.0 : (appMouse.containsMouse ? 0.95 : (wsBtn.focused ? 0.75 : 0.55))
-
-              Behavior on opacity {
-                NumberAnimation { duration: Style.duration(140) }
-              }
-            }
-
-            MouseArea {
-              id: appMouse
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: function(mouse) {
-                root.focusWindow(modelData.address)
-              }
-              onEntered: {
-                if (root.bar && modelData.title) {
-                  root.bar.showTooltip(iconSlot, modelData.title)
-                }
-              }
-              onExited: {
-                if (root.bar) root.bar.hideTooltip(iconSlot)
-              }
-              onWheel: function(wheel) {
-                root.scrollWorkspaces(wheel.angleDelta.y)
-              }
-            }
+          Behavior on scale {
+            NumberAnimation { duration: Style.duration(240); easing.type: Easing.OutBack }
           }
-        }
 
-        // Horizontal layout (for top / bottom bar)
-        Row {
-          id: contentRow
-          visible: !root.vertical
-          anchors.centerIn: parent
-          spacing: Style.space(6)
+          Image {
+            id: rawIcon
+            anchors.fill: parent
+            source: modelData.icon
+            sourceSize.width: Math.round(width * Screen.devicePixelRatio)
+            sourceSize.height: Math.round(height * Screen.devicePixelRatio)
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            visible: false
+          }
 
-          Text {
-            id: wsLabelRow
-            textFormat: Text.PlainText
-            text: wsBtn.modelData === 10 ? "0" : String(wsBtn.modelData)
-            color: root.bar ? root.bar.barForeground : Commons.Color.foreground
-            font.bold: wsBtn.focused
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.body
-            renderType: Text.NativeRendering
-            anchors.verticalCenter: parent.verticalCenter
-            opacity: wsBtn.occupied || wsBtn.focused ? 1.0 : 0.45
+          MultiEffect {
+            anchors.fill: rawIcon
+            source: rawIcon
+            visible: rawIcon.status === Image.Ready
+            colorization: 1.0
+            colorizationColor: root.bar ? root.bar.barForeground : "#ffffff"
+            opacity: iconSlot.isCurrent ? 1.0 : (appMouse.containsMouse ? 0.95 : (wsBtn.focused ? 0.75 : 0.55))
 
-            Behavior on color {
-              enabled: !root.bar || root.bar.foregroundAnimationEnabled
-              ColorAnimation { duration: Style.duration(160) }
-            }
             Behavior on opacity {
               NumberAnimation { duration: Style.duration(140) }
             }
           }
 
-          // Pipe separator between workspace number and open apps
-          Text {
-            visible: wsBtn.hasApps
-            textFormat: Text.PlainText
-            text: "|"
-            color: root.bar ? root.bar.barForeground : Commons.Color.foreground
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.body
-            renderType: Text.NativeRendering
-            opacity: wsBtn.focused ? 0.35 : 0.2
-            anchors.verticalCenter: parent.verticalCenter
-
-            Behavior on color {
-              enabled: !root.bar || root.bar.foregroundAnimationEnabled
-              ColorAnimation { duration: Style.duration(160) }
+          MouseArea {
+            id: appMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: function(mouse) {
+              root.focusWindow(modelData.address)
             }
-            Behavior on opacity {
-              NumberAnimation { duration: Style.duration(140) }
+            onEntered: {
+              if (root.bar) {
+                var title = root.titleForAddress(wsBtn.workspace, modelData.address)
+                if (title) root.bar.showTooltip(iconSlot, title)
+              }
             }
-          }
-
-          Repeater {
-            model: !root.vertical ? wsBtn.appList : []
-            delegate: appIconDelegate
+            onExited: {
+              if (root.bar) root.bar.hideTooltip(iconSlot)
+            }
+            onWheel: function(wheel) {
+              root.scrollWorkspaces(wheel.angleDelta.y)
+            }
           }
         }
-
-        // Vertical layout (for left / right bar)
-        Column {
-          id: contentCol
-          visible: root.vertical
-          anchors.centerIn: parent
-          spacing: Style.space(4)
-
-          Text {
-            id: wsLabelCol
-            textFormat: Text.PlainText
-            text: wsBtn.modelData === 10 ? "0" : String(wsBtn.modelData)
-            color: root.bar ? root.bar.barForeground : Commons.Color.foreground
-            font.bold: wsBtn.focused
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.body
-            renderType: Text.NativeRendering
-            anchors.horizontalCenter: parent.horizontalCenter
-            opacity: wsBtn.occupied || wsBtn.focused ? 1.0 : 0.45
-
-            Behavior on color {
-              enabled: !root.bar || root.bar.foregroundAnimationEnabled
-              ColorAnimation { duration: Style.duration(160) }
-            }
-            Behavior on opacity {
-              NumberAnimation { duration: Style.duration(140) }
-            }
-          }
-
-          // Dash separator between workspace number and open apps
-          Rectangle {
-            id: wsDividerCol
-            visible: wsBtn.hasApps
-            width: Style.space(8)
-            height: 1
-            implicitWidth: Style.space(8)
-            implicitHeight: 1
-            color: root.bar ? root.bar.barForeground : Commons.Color.foreground
-            opacity: wsBtn.focused ? 0.35 : 0.2
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            Behavior on color {
-              enabled: !root.bar || root.bar.foregroundAnimationEnabled
-              ColorAnimation { duration: Style.duration(160) }
-            }
-            Behavior on opacity {
-              NumberAnimation { duration: Style.duration(140) }
-            }
-          }
-
-          Repeater {
-            model: root.vertical ? wsBtn.appList : []
-            delegate: appIconDelegate
-          }
-        }
-
-        onPressed: function() { root.focusWorkspace(modelData) }
-        onWheelMoved: function(delta) { root.scrollWorkspaces(delta) }
       }
+
+      // Horizontal layout (for top / bottom bar)
+      // When hasApps, left-aligned at Style.space(8) with clipping so new apps reveal smoothly as width expands!
+      Row {
+        id: contentRow
+        visible: !root.vertical
+        anchors.left: wsBtn.hasApps ? parent.left : undefined
+        anchors.leftMargin: wsBtn.hasApps ? Style.space(8) : 0
+        anchors.horizontalCenter: wsBtn.hasApps ? undefined : parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        width: wsBtn.hasApps ? Math.max(0, parent.width - Style.space(16)) : implicitWidth
+        clip: wsBtn.hasApps
+        spacing: Style.space(5)
+
+        Text {
+          id: wsLabelRow
+          textFormat: Text.PlainText
+          text: wsBtn.modelData === 10 ? "0" : String(wsBtn.modelData)
+          color: root.bar ? root.bar.barForeground : Commons.Color.foreground
+          font.bold: wsBtn.focused
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Math.min(Style.font.body, 12)
+          renderType: Text.NativeRendering
+          anchors.verticalCenter: parent.verticalCenter
+          opacity: wsBtn.occupied || wsBtn.focused ? 1.0 : 0.45
+
+          Behavior on color {
+            enabled: !root.bar || root.bar.foregroundAnimationEnabled
+            ColorAnimation { duration: Style.duration(160) }
+          }
+          Behavior on opacity {
+            NumberAnimation { duration: Style.duration(180) }
+          }
+        }
+
+        // Pipe separator between workspace number and open apps
+        Text {
+          visible: wsBtn.hasApps
+          textFormat: Text.PlainText
+          text: "|"
+          color: root.bar ? root.bar.barForeground : Commons.Color.foreground
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Math.min(Style.font.body, 12)
+          renderType: Text.NativeRendering
+          opacity: wsBtn.focused ? 0.35 : 0.2
+          anchors.verticalCenter: parent.verticalCenter
+
+          Behavior on color {
+            enabled: !root.bar || root.bar.foregroundAnimationEnabled
+            ColorAnimation { duration: Style.duration(160) }
+          }
+          Behavior on opacity {
+            NumberAnimation { duration: Style.duration(180) }
+          }
+        }
+
+        Repeater {
+          model: !root.vertical ? wsBtn.appList : []
+          delegate: appIconDelegate
+        }
+      }
+
+      // Vertical layout (for left / right bar)
+      Column {
+        id: contentCol
+        visible: root.vertical
+        anchors.top: wsBtn.hasApps ? parent.top : undefined
+        anchors.topMargin: wsBtn.hasApps ? Style.space(8) : 0
+        anchors.verticalCenter: wsBtn.hasApps ? undefined : parent.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+        height: wsBtn.hasApps ? Math.max(0, parent.height - Style.space(16)) : implicitHeight
+        clip: wsBtn.hasApps
+        spacing: Style.space(4)
+
+        Text {
+          id: wsLabelCol
+          textFormat: Text.PlainText
+          text: wsBtn.modelData === 10 ? "0" : String(wsBtn.modelData)
+          color: root.bar ? root.bar.barForeground : Commons.Color.foreground
+          font.bold: wsBtn.focused
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Math.min(Style.font.body, 12)
+          renderType: Text.NativeRendering
+          anchors.horizontalCenter: parent.horizontalCenter
+          opacity: wsBtn.occupied || wsBtn.focused ? 1.0 : 0.45
+
+          Behavior on color {
+            enabled: !root.bar || root.bar.foregroundAnimationEnabled
+            ColorAnimation { duration: Style.duration(160) }
+          }
+          Behavior on opacity {
+            NumberAnimation { duration: Style.duration(180) }
+          }
+        }
+
+        // Dash separator between workspace number and open apps
+        Rectangle {
+          id: wsDividerCol
+          visible: wsBtn.hasApps
+          width: Style.space(8)
+          height: 1
+          implicitWidth: Style.space(8)
+          implicitHeight: 1
+          color: root.bar ? root.bar.barForeground : Commons.Color.foreground
+          opacity: wsBtn.focused ? 0.35 : 0.2
+          anchors.horizontalCenter: parent.horizontalCenter
+
+          Behavior on color {
+            enabled: !root.bar || root.bar.foregroundAnimationEnabled
+            ColorAnimation { duration: Style.duration(160) }
+          }
+          Behavior on opacity {
+            NumberAnimation { duration: Style.duration(180) }
+          }
+        }
+
+        Repeater {
+          model: root.vertical ? wsBtn.appList : []
+          delegate: appIconDelegate
+        }
+      }
+
+      onPressed: function() { root.focusWorkspace(modelData) }
+      onWheelMoved: function(delta) { root.scrollWorkspaces(delta) }
+    }
+  }
+
+  // Horizontal row layout for rock-solid frame-by-frame synchronization
+  Row {
+    id: horizontalRow
+    visible: !root.vertical
+    z: 1
+    anchors.left: parent.left
+    anchors.leftMargin: root.framePaddingX
+    anchors.verticalCenter: parent.verticalCenter
+    spacing: Style.space(8)
+
+    Repeater {
+      model: !root.vertical ? root.workspaceIds() : []
+      delegate: wsBtnComponent
+    }
+  }
+
+  // Vertical column layout for vertical bar mode
+  Column {
+    id: verticalCol
+    visible: root.vertical
+    z: 1
+    anchors.top: parent.top
+    anchors.topMargin: root.framePaddingX
+    anchors.horizontalCenter: parent.horizontalCenter
+    spacing: Style.space(6)
+
+    Repeater {
+      model: root.vertical ? root.workspaceIds() : []
+      delegate: wsBtnComponent
     }
   }
 }
